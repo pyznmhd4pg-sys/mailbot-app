@@ -64,7 +64,7 @@
         tg.ready();
         tg.expand();
 
-        const API_URL = "https://involved-wines-apparatus-vbulletin.trycloudflare.com"; 
+        const API_URL = "https://palestinian-calculations-chance-architecture.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -119,11 +119,11 @@
             
             let bodyText = email.body || "";
             if (bodyText.trim() === "") {
-                bodyText = "(В этом письме нет текста, только картинки или ссылки. Нажми кнопку 'Открыть оригинал' ниже.)";
+                bodyText = "(В этом письме нет текста, только картинки. Нажми кнопку 'Открыть оригинал' ниже.)";
             }
             document.getElementById('view-body').textContent = bodyText;
             
-            // Настраиваем кнопку "Открыть оригинал"
+            // Показываем кнопку "Открыть оригинал"
             const btnOriginal = document.getElementById('btn-original');
             if (email.original_url) {
                 btnOriginal.style.display = "block";
