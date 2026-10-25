@@ -17,6 +17,7 @@
         textarea { width: 100%; height: 100px; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid var(--tg-theme-hint-color); background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); box-sizing: border-box; }
         .hidden { display: none; }
         .error { color: red; text-align: center; margin-top: 20px; }
+        a { color: var(--tg-theme-link-color); }
     </style>
 </head>
 <body>
@@ -55,10 +56,10 @@
         tg.expand();
 
         // ⚠️ ВСТАВЬ СЮДА АКТУАЛЬНУЮ ССЫЛКУ ИЗ ОКНА MANAGER
-        const API_URL = "https://dude-electronics-contain-listed.trycloudflare.com"; 
+        const API_URL = "https://eastern-represent-screensavers-replica.trycloudflare.com"; 
 
-        let allEmails = []; // Хранилище для загруженных писем
-        let currentEmail = null; // Текущее открытое письмо
+        let allEmails = []; 
+        let currentEmail = null; 
 
         async function apiRequest(endpoint, body) {
             const response = await fetch(API_URL + endpoint, {
@@ -78,7 +79,7 @@
             try {
                 const data = await apiRequest("/api/emails", {});
                 list.innerHTML = "";
-                allEmails = data.emails || []; // Сохраняем письма в память
+                allEmails = data.emails || []; 
                 
                 if (allEmails.length === 0) {
                     list.innerText = "Писем нет.";
@@ -96,9 +97,8 @@
             }
         }
 
-        // --- Открытие письма (из памяти) ---
+        // --- Открытие письма ---
         function openEmail(uid) {
-            // Находим письмо в уже загруженном списке
             const email = allEmails.find(e => String(e.uid) === String(uid));
             if (!email) {
                 alert("Письмо не найдено в памяти. Обнови список.");
@@ -109,7 +109,13 @@
             document.getElementById('view-subject').innerText = email.subject || "(без темы)";
             document.getElementById('view-from').innerText = email.from || "Неизвестно";
             document.getElementById('view-date').innerText = email.date || "";
-            document.getElementById('view-body').innerText = email.body || "Текст письма отсутствует";
+            
+            // Превращаем ссылки в кликабельные
+            const bodyText = email.body || "Текст письма отсутствует";
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            const linkedText = bodyText.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
+            document.getElementById('view-body').innerHTML = linkedText;
+            
             document.getElementById('reply-text').value = "";
             showView();
         }
