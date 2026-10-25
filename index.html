@@ -150,7 +150,6 @@
         .modal-buttons { display: flex; gap: 10px; flex-direction: column; }
         .modal-buttons .btn { width: 100%; }
 
-        /* Стили для списка частых контактов */
         .contact-suggestions {
             display: flex;
             flex-wrap: wrap;
@@ -167,6 +166,10 @@
             color: #3E2723;
             cursor: pointer;
             transition: background 0.2s;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .contact-chip:active { background: #D35400; color: white; }
     </style>
@@ -234,7 +237,6 @@
             <h3>Переслать на Email</h3>
             <input type="email" id="forward-email-input" placeholder="example@mail.ru" autocomplete="email">
             
-            <!-- Блок с частыми контактами -->
             <div id="contact-suggestions" class="contact-suggestions"></div>
 
             <div class="modal-buttons" style="margin-top: 15px;">
@@ -252,7 +254,7 @@
         tg.setHeaderColor('#FDEBD0');
         tg.setBackgroundColor('#FDEBD0');
 
-        const API_URL = "https://anybody-raid-kay-requested.trycloudflare.com"; 
+        const API_URL = "https://ware-acquired-contest-sig.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -285,7 +287,9 @@
                     div.className = 'email';
                     div.onclick = () => openEmail(em.uid);
                     const previewText = (em.body || "").substring(0, 100);
-                    div.innerHTML = `<h3>${em.subject || "(без темы)"}</h3><p><b>От:</b> ${em.from}</p><p>${previewText}...</p>`;
+                    // Если есть имя — выводим его, иначе email
+                    const senderDisplay = em.from_name && em.from_name !== em.from ? `${em.from_name}` : em.from;
+                    div.innerHTML = `<h3>${em.subject || "(без темы)"}</h3><p><b>От:</b> ${senderDisplay}</p><p>${previewText}...</p>`;
                     list.appendChild(div);
                 });
             } catch (e) {
@@ -302,7 +306,9 @@
             
             currentEmail = email;
             document.getElementById('view-subject').innerText = email.subject || "(без темы)";
-            document.getElementById('view-from').innerText = email.from || "Неизвестно";
+            // Показываем "Имя <email>"
+            const senderDisplay = email.from_name && email.from_name !== email.from ? `${email.from_name} &lt;${email.from}&gt;` : email.from;
+            document.getElementById('view-from').innerHTML = senderDisplay;
             document.getElementById('view-date').innerText = email.date || "";
             
             let bodyText = email.body || "";
@@ -365,10 +371,8 @@
             const input = document.getElementById('forward-email-input');
             input.value = "";
             
-            // Показываем модальное окно
             document.getElementById('email-forward-modal').classList.remove('hidden');
             
-            // Загружаем частые контакты
             const suggestionsDiv = document.getElementById('contact-suggestions');
             suggestionsDiv.innerHTML = "Загрузка...";
             
@@ -376,18 +380,27 @@
                 const data = await apiRequest("/api/contacts", {});
                 suggestionsDiv.innerHTML = "";
                 if (data.contacts && data.contacts.length > 0) {
-                    data.contacts.slice(0, 10).forEach(contact => { // Берем первые 10
+                    data.contacts.slice(0, 10).forEach(contact => {
                         const chip = document.createElement('div');
                         chip.className = 'contact-chip';
-                        chip.innerText = contact;
+                        
+                        // Формируем текст "Имя (email)"
+                        let displayText = contact.email;
+                        if (contact.name && contact.name !== contact.email) {
+                            displayText = `${contact.name} (${contact.email})`;
+                        }
+                        
+                        chip.innerText = displayText;
+                        chip.title = displayText;
+                        
                         chip.onclick = () => {
-                            input.value = contact;
+                            input.value = contact.email; // Вставляем только email в поле
                         };
                         suggestionsDiv.appendChild(chip);
                     });
                 }
             } catch (e) {
-                suggestionsDiv.innerHTML = ""; // Просто скрываем, если не удалось загрузить
+                suggestionsDiv.innerHTML = ""; 
             }
         }
         function closeEmailForwardModal() {
