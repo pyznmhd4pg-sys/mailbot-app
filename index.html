@@ -18,24 +18,21 @@
         .hidden { display: none; }
         .error { color: red; text-align: center; margin-top: 20px; }
         
-        /* Стили для тела письма */
         #view-body { 
             margin-top: 15px; 
             overflow-wrap: break-word;
-            white-space: pre-wrap; /* Сохраняет переносы строк */
+            white-space: pre-wrap; 
             font-size: 15px;
             line-height: 1.5;
         }
     </style>
 </head>
 <body>
-    <!-- ЭКРАН 1: Список писем -->
     <div id="screen-list">
         <h2>📥 Входящие</h2>
         <div id="email-list">Загрузка...</div>
     </div>
 
-    <!-- ЭКРАН 2: Просмотр письма -->
     <div id="screen-view" class="hidden">
         <button class="btn btn-secondary" onclick="showList()">⬅️ Назад</button>
         <h2 id="view-subject" style="margin-top: 15px;"></h2>
@@ -51,7 +48,6 @@
         <button class="btn btn-secondary" onclick="showMoveMenu()">📂 Переместить</button>
     </div>
 
-    <!-- ЭКРАН 3: Меню перемещения -->
     <div id="screen-move" class="hidden">
         <button class="btn btn-secondary" onclick="showView()">⬅️ Отмена</button>
         <h3>Выбери папку:</h3>
@@ -63,8 +59,7 @@
         tg.ready();
         tg.expand();
 
-        // ⚠️ ВСТАВЬ СЮДА АКТУАЛЬНУЮ ССЫЛКУ ИЗ ОКНА MANAGER
-        const API_URL = "https://charitable-able-reporter-biographies.trycloudflare.com"; 
+        const API_URL = "https://wing-gender-courage-thin.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -80,7 +75,6 @@
             return data;
         }
 
-        // --- Экран списка ---
         async function loadEmails() {
             const list = document.getElementById('email-list');
             list.innerHTML = "Загрузка...";
@@ -97,8 +91,7 @@
                     const div = document.createElement('div');
                     div.className = 'email';
                     div.onclick = () => openEmail(em.uid);
-                    // Очищаем превью от возможных HTML тегов
-                    const previewText = (em.body || "").replace(/<[^>]*>/g, ' ').substring(0, 100);
+                    const previewText = (em.body || "").substring(0, 100);
                     div.innerHTML = `<h3>${em.subject || "(без темы)"}</h3><p><b>От:</b> ${em.from}</p><p>${previewText}...</p>`;
                     list.appendChild(div);
                 });
@@ -107,7 +100,6 @@
             }
         }
 
-        // --- Открытие письма ---
         function openEmail(uid) {
             const email = allEmails.find(e => String(e.uid) === String(uid));
             if (!email) {
@@ -120,14 +112,13 @@
             document.getElementById('view-from').innerText = email.from || "Неизвестно";
             document.getElementById('view-date').innerText = email.date || "";
             
-            // Вставляем как чистый текст, чтобы цвета не ломались
+            // Выводим чистый текст
             document.getElementById('view-body').textContent = email.body || "Текст письма отсутствует";
             
             document.getElementById('reply-text').value = "";
             showView();
         }
 
-        // --- Ответ ---
         async function sendReply() {
             const body = document.getElementById('reply-text').value;
             if (!body) return alert("Введи текст ответа!");
@@ -141,7 +132,6 @@
             }
         }
 
-        // --- Удаление ---
         async function deleteEmail() {
             if (!confirm("Удалить это письмо?")) return;
             try {
@@ -153,7 +143,6 @@
             }
         }
 
-        // --- Перемещение ---
         async function showMoveMenu() {
             try {
                 const data = await apiRequest("/api/folders", {});
@@ -183,7 +172,6 @@
             }
         }
 
-        // --- Навигация ---
         function showScreen(id) {
             document.querySelectorAll('body > div').forEach(d => d.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
