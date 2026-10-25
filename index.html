@@ -64,7 +64,7 @@
         tg.expand();
 
         // ⚠️ ВСТАВЬ СЮДА АКТУАЛЬНУЮ ССЫЛКУ ИЗ ОКНА MANAGER
-        const API_URL = "https://colorado-greene-sept-canyon.trycloudflare.com"; 
+        const API_URL = "https://charitable-able-reporter-biographies.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -97,8 +97,8 @@
                     const div = document.createElement('div');
                     div.className = 'email';
                     div.onclick = () => openEmail(em.uid);
-                    // В списке показываем только чистый текст
-                    const previewText = (em.body || "").substring(0, 100);
+                    // Очищаем превью от возможных HTML тегов
+                    const previewText = (em.body || "").replace(/<[^>]*>/g, ' ').substring(0, 100);
                     div.innerHTML = `<h3>${em.subject || "(без темы)"}</h3><p><b>От:</b> ${em.from}</p><p>${previewText}...</p>`;
                     list.appendChild(div);
                 });
