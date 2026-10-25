@@ -19,13 +19,8 @@
         .hidden { display: none; }
         .error { color: red; text-align: center; margin-top: 20px; }
         
-        #view-body { 
-            margin-top: 15px; 
-            overflow-wrap: break-word;
-            white-space: pre-wrap; 
-            font-size: 15px;
-            line-height: 1.5;
-        }
+        #view-body { margin-top: 15px; overflow-wrap: break-word; white-space: pre-wrap; font-size: 15px; line-height: 1.5; }
+        #view-screenshot { width: 100%; border-radius: 8px; margin-top: 15px; border: 1px solid var(--tg-theme-hint-color); }
     </style>
 </head>
 <body>
@@ -40,15 +35,16 @@
         <p><b>От:</b> <span id="view-from"></span></p>
         <p><b>Дата:</b> <span id="view-date"></span></p>
         
+        <!-- Блок для картинки -->
+        <img id="view-screenshot" class="hidden" src="" alt="Письмо" />
+        
+        <!-- Блок для текста -->
         <div id="view-body"></div>
         
         <hr style="margin: 20px 0; border-color: var(--tg-theme-hint-color);">
         
         <textarea id="reply-text" placeholder="Текст ответа..."></textarea>
         <button class="btn btn-primary" onclick="sendReply()">✉️ Отправить ответ</button>
-        
-        <button id="btn-original" class="btn btn-link" onclick="openOriginal()">🌐 Открыть оригинал в почте</button>
-        
         <button class="btn btn-danger" onclick="deleteEmail()">🗑 Удалить</button>
         <button class="btn btn-secondary" onclick="showMoveMenu()">📂 Переместить</button>
     </div>
@@ -64,7 +60,7 @@
         tg.ready();
         tg.expand();
 
-        const API_URL = "https://webpage-fantastic-governor-vessel.trycloudflare.com"; 
+        const API_URL = "https://likes-loads-aims-gallery.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -117,27 +113,24 @@
             document.getElementById('view-from').innerText = email.from || "Неизвестно";
             document.getElementById('view-date').innerText = email.date || "";
             
-            let bodyText = email.body || "";
-            if (bodyText.trim() === "") {
-                bodyText = "(В этом письме нет текста, только картинки или скрипты. Нажми кнопку 'Открыть оригинал' ниже.)";
-            }
-            document.getElementById('view-body').textContent = bodyText;
-            
-            const btnOriginal = document.getElementById('btn-original');
-            if (email.original_url) {
-                btnOriginal.style.display = "block";
+            const imgElement = document.getElementById('view-screenshot');
+            const bodyElement = document.getElementById('view-body');
+
+            // Если сервер сделал картинку — показываем её
+            if (email.screenshot) {
+                imgElement.src = `${API_URL}/static/${email.screenshot}`;
+                imgElement.classList.remove('hidden');
+                bodyElement.classList.add('hidden');
             } else {
-                btnOriginal.style.display = "none";
+                // Иначе показываем текст
+                imgElement.classList.add('hidden');
+                bodyElement.classList.remove('hidden');
+                let bodyText = email.body || "(Письмо пустое)";
+                bodyElement.textContent = bodyText;
             }
             
             document.getElementById('reply-text').value = "";
             showView();
-        }
-
-        function openOriginal() {
-            if (currentEmail && currentEmail.original_url) {
-                tg.openLink(currentEmail.original_url);
-            }
         }
 
         async function sendReply() {
