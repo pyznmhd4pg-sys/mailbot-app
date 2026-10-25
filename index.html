@@ -18,10 +18,13 @@
         .hidden { display: none; }
         .error { color: red; text-align: center; margin-top: 20px; }
         
-        /* Стили для контейнера письма */
+        /* Стили для тела письма */
         #view-body { 
             margin-top: 15px; 
             overflow-wrap: break-word;
+            white-space: pre-wrap; /* Сохраняет переносы строк */
+            font-size: 15px;
+            line-height: 1.5;
         }
     </style>
 </head>
@@ -61,7 +64,7 @@
         tg.expand();
 
         // ⚠️ ВСТАВЬ СЮДА АКТУАЛЬНУЮ ССЫЛКУ ИЗ ОКНА MANAGER
-        const API_URL = "https://thick-jones-dealt-paso.trycloudflare.com"; 
+        const API_URL = "https://colorado-greene-sept-canyon.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -94,8 +97,8 @@
                     const div = document.createElement('div');
                     div.className = 'email';
                     div.onclick = () => openEmail(em.uid);
-                    // Очищаем превью от HTML тегов
-                    const previewText = (em.body || "").replace(/<[^>]*>/g, ' ').substring(0, 100);
+                    // В списке показываем только чистый текст
+                    const previewText = (em.body || "").substring(0, 100);
                     div.innerHTML = `<h3>${em.subject || "(без темы)"}</h3><p><b>От:</b> ${em.from}</p><p>${previewText}...</p>`;
                     list.appendChild(div);
                 });
@@ -117,8 +120,8 @@
             document.getElementById('view-from').innerText = email.from || "Неизвестно";
             document.getElementById('view-date').innerText = email.date || "";
             
-            // Вставляем HTML (картинки и верстка сохранятся, но текст будет перекрашен сервером)
-            document.getElementById('view-body').innerHTML = email.body || "Текст письма отсутствует";
+            // Вставляем как чистый текст, чтобы цвета не ломались
+            document.getElementById('view-body').textContent = email.body || "Текст письма отсутствует";
             
             document.getElementById('reply-text').value = "";
             showView();
