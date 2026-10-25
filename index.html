@@ -65,9 +65,15 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ initData: tg.initData, ...body })
             });
-            const data = await response.json();
-            if (data.error) throw new Error(data.error);
-            return data;
+            const text = await response.text();
+            
+            try {
+                const data = JSON.parse(text);
+                if (data.error) throw new Error(data.error);
+                return data;
+            } catch (e) {
+                throw new Error("Ошибка формата ответа: " + text.substring(0, 100));
+            }
         }
 
         // --- Экран списка ---
@@ -100,7 +106,7 @@
                 const data = await apiRequest(`/api/email/${uid}`, {});
                 
                 if (!data.email) {
-                    throw new Error("Сервер не вернул данные письма");
+                    throw new Error("Сервер не вернул объект email");
                 }
 
                 document.getElementById('view-subject').innerText = data.email.subject || "(без темы)";
@@ -110,7 +116,8 @@
                 document.getElementById('reply-text').value = "";
                 showView();
             } catch (e) {
-                alert("Не удалось открыть письмо: " + e.message);
+                // Выводим ошибку с подробностями
+                alert("ОШИБКА СЕРВЕРА:\n" + e.message);
             }
         }
 
