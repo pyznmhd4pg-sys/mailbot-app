@@ -106,7 +106,9 @@
         }
         textarea:focus { outline: 2px solid #D35400; background: rgba(255, 255, 255, 1); }
 
-        .hidden { display: none; }
+        /* Универсальный класс для скрытия элементов */
+        .hidden { display: none !important; }
+        
         .error { color: #C0392B; text-align: center; margin-top: 20px; font-weight: bold; }
         
         #view-body { 
@@ -125,6 +127,7 @@
         #view-subject { color: #3E2723; margin: 0; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); }
         #screen-view p { color: #5D4037; margin: 5px 0; }
 
+        /* Модальное окно подтверждения */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -134,6 +137,10 @@
             justify-content: center;
             z-index: 1000;
             backdrop-filter: blur(3px);
+        }
+        /* По умолчанию окно скрыто (display: none) */
+        .modal-overlay.hidden {
+            display: none;
         }
         .modal-content {
             background: #FDEBD0;
@@ -152,11 +159,13 @@
     </style>
 </head>
 <body>
+    <!-- ЭКРАН 1: Список писем -->
     <div id="screen-list">
         <h2>📥 Входящие</h2>
         <div id="email-list">Загрузка...</div>
     </div>
 
+    <!-- ЭКРАН 2: Просмотр письма -->
     <div id="screen-view" class="hidden">
         <div class="email-header">
             <h2 id="view-subject"></h2>
@@ -180,12 +189,14 @@
         </div>
     </div>
 
+    <!-- ЭКРАН 3: Меню перемещения -->
     <div id="screen-move" class="hidden">
         <button class="btn btn-secondary" style="width: 100%; margin-bottom: 15px;" onclick="showView()">⬅️ Отмена</button>
         <h3>Выбери папку:</h3>
         <div id="folder-list"></div>
     </div>
 
+    <!-- Модальное окно подтверждения удаления (по умолчанию hidden) -->
     <div id="delete-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h3>Удалить письмо?</h3>
@@ -205,7 +216,6 @@
         tg.setHeaderColor('#FDEBD0');
         tg.setBackgroundColor('#FDEBD0');
 
-        // Твоя ссылка туннеля уже вставлена
         const API_URL = "https://closely-sunny-variety-mlb.trycloudflare.com"; 
 
         let allEmails = []; 
@@ -292,9 +302,11 @@
         function openDeleteModal() {
             document.getElementById('delete-modal').classList.remove('hidden');
         }
+        
         function closeDeleteModal() {
             document.getElementById('delete-modal').classList.add('hidden');
         }
+        
         async function confirmDelete() {
             closeDeleteModal();
             try {
@@ -338,10 +350,17 @@
         }
 
         function showScreen(id) {
-            document.querySelectorAll('body > div').forEach(d => d.classList.add('hidden'));
+            // Скрываем все экраны
+            document.querySelectorAll('body > div').forEach(d => {
+                if (d.id !== 'delete-modal') { // Не трогаем модальное окно здесь
+                    d.classList.add('hidden');
+                }
+            });
+            // Показываем нужный
             document.getElementById(id).classList.remove('hidden');
             window.scrollTo(0, 0);
         }
+        
         function showList() { loadEmails(); showScreen('screen-list'); }
         function showView() { showScreen('screen-view'); }
 
