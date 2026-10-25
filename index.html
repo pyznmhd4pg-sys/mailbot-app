@@ -14,7 +14,6 @@
         .btn-primary { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); }
         .btn-danger { background: #f44336; color: white; }
         .btn-secondary { background: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color); border: 1px solid var(--tg-theme-hint-color); }
-        .btn-link { background: transparent; color: var(--tg-theme-link-color); text-decoration: underline; }
         textarea { width: 100%; height: 100px; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid var(--tg-theme-hint-color); background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); box-sizing: border-box; }
         .hidden { display: none; }
         .error { color: red; text-align: center; margin-top: 20px; }
@@ -60,7 +59,7 @@
         tg.ready();
         tg.expand();
 
-        const API_URL = "https://likes-loads-aims-gallery.trycloudflare.com"; 
+        const API_URL = "https://water-blonde-albuquerque-salt.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -92,7 +91,7 @@
                     const div = document.createElement('div');
                     div.className = 'email';
                     div.onclick = () => openEmail(em.uid);
-                    const previewText = (em.body || "").substring(0, 100);
+                    const previewText = em.screenshot ? "[Изображение]" : (em.body || "").substring(0, 100);
                     div.innerHTML = `<h3>${em.subject || "(без темы)"}</h3><p><b>От:</b> ${em.from}</p><p>${previewText}...</p>`;
                     list.appendChild(div);
                 });
@@ -116,7 +115,7 @@
             const imgElement = document.getElementById('view-screenshot');
             const bodyElement = document.getElementById('view-body');
 
-            // Если сервер сделал картинку — показываем её
+            // Если сервер прислал картинку — показываем её
             if (email.screenshot) {
                 imgElement.src = `${API_URL}/static/${email.screenshot}`;
                 imgElement.classList.remove('hidden');
@@ -125,8 +124,7 @@
                 // Иначе показываем текст
                 imgElement.classList.add('hidden');
                 bodyElement.classList.remove('hidden');
-                let bodyText = email.body || "(Письмо пустое)";
-                bodyElement.textContent = bodyText;
+                bodyElement.textContent = email.body || "(Письмо пустое)";
             }
             
             document.getElementById('reply-text').value = "";
