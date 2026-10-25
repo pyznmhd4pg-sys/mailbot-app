@@ -172,6 +172,21 @@
             text-overflow: ellipsis;
         }
         .contact-chip:active { background: #D35400; color: white; }
+
+        /* Контейнер для кнопки "Готово" над клавиатурой (опционально, если нужно) */
+        .keyboard-dismiss {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 5px;
+        }
+        .keyboard-dismiss button {
+            background: transparent;
+            border: none;
+            color: #D35400;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -235,8 +250,14 @@
     <div id="email-forward-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h3>Переслать на Email</h3>
-            <input type="email" id="forward-email-input" placeholder="example@mail.ru" autocomplete="email">
+            <!-- Поле ввода с обработчиком Enter -->
+            <input type="email" id="forward-email-input" placeholder="example@mail.ru" autocomplete="email" onkeydown="if(event.key === 'Enter') this.blur()">
             
+            <!-- Кнопка "Готово" для скрытия клавиатуры -->
+            <div class="keyboard-dismiss">
+                <button onclick="document.activeElement.blur()">Готово</button>
+            </div>
+
             <div id="contact-suggestions" class="contact-suggestions"></div>
 
             <div class="modal-buttons" style="margin-top: 15px;">
@@ -287,7 +308,6 @@
                     div.className = 'email';
                     div.onclick = () => openEmail(em.uid);
                     const previewText = (em.body || "").substring(0, 100);
-                    // Если есть имя — выводим его, иначе email
                     const senderDisplay = em.from_name && em.from_name !== em.from ? `${em.from_name}` : em.from;
                     div.innerHTML = `<h3>${em.subject || "(без темы)"}</h3><p><b>От:</b> ${senderDisplay}</p><p>${previewText}...</p>`;
                     list.appendChild(div);
@@ -306,7 +326,6 @@
             
             currentEmail = email;
             document.getElementById('view-subject').innerText = email.subject || "(без темы)";
-            // Показываем "Имя <email>"
             const senderDisplay = email.from_name && email.from_name !== email.from ? `${email.from_name} &lt;${email.from}&gt;` : email.from;
             document.getElementById('view-from').innerHTML = senderDisplay;
             document.getElementById('view-date').innerText = email.date || "";
@@ -384,7 +403,6 @@
                         const chip = document.createElement('div');
                         chip.className = 'contact-chip';
                         
-                        // Формируем текст "Имя (email)"
                         let displayText = contact.email;
                         if (contact.name && contact.name !== contact.email) {
                             displayText = `${contact.name} (${contact.email})`;
@@ -394,7 +412,8 @@
                         chip.title = displayText;
                         
                         chip.onclick = () => {
-                            input.value = contact.email; // Вставляем только email в поле
+                            input.value = contact.email; 
+                            input.blur(); // Скрываем клавиатуру при выборе контакта
                         };
                         suggestionsDiv.appendChild(chip);
                     });
@@ -407,6 +426,9 @@
             document.getElementById('email-forward-modal').classList.add('hidden');
         }
         async function confirmEmailForward() {
+            // Принудительно убираем фокус с клавиатуры
+            document.getElementById('forward-email-input').blur();
+            
             const emailInput = document.getElementById('forward-email-input').value.trim();
             if (!emailInput) return alert("Введите email!");
             
