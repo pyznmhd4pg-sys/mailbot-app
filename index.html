@@ -18,6 +18,10 @@
         .hidden { display: none; }
         .error { color: red; text-align: center; margin-top: 20px; }
         a { color: var(--tg-theme-link-color); }
+        
+        /* Стили для тела письма */
+        #view-body { margin-top: 15px; overflow-wrap: break-word; }
+        #view-body * { max-width: 100% !important; }
     </style>
 </head>
 <body>
@@ -33,7 +37,7 @@
         <h2 id="view-subject" style="margin-top: 15px;"></h2>
         <p><b>От:</b> <span id="view-from"></span></p>
         <p><b>Дата:</b> <span id="view-date"></span></p>
-        <div id="view-body" style="margin-top: 15px; white-space: pre-wrap;"></div>
+        <div id="view-body"></div>
         
         <hr style="margin: 20px 0; border-color: var(--tg-theme-hint-color);">
         
@@ -56,7 +60,7 @@
         tg.expand();
 
         // ⚠️ ВСТАВЬ СЮДА АКТУАЛЬНУЮ ССЫЛКУ ИЗ ОКНА MANAGER
-        const API_URL = "https://eastern-represent-screensavers-replica.trycloudflare.com"; 
+        const API_URL = "https://mud-choir-experiments-thy.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -89,7 +93,9 @@
                     const div = document.createElement('div');
                     div.className = 'email';
                     div.onclick = () => openEmail(em.uid);
-                    div.innerHTML = `<h3>${em.subject || "(без темы)"}</h3><p><b>От:</b> ${em.from}</p><p>${(em.body || "").substring(0, 100)}...</p>`;
+                    // В списке показываем только чистый текст без тегов
+                    const previewText = (em.body || "").replace(/<[^>]+>/g, ' ').substring(0, 100);
+                    div.innerHTML = `<h3>${em.subject || "(без темы)"}</h3><p><b>От:</b> ${em.from}</p><p>${previewText}...</p>`;
                     list.appendChild(div);
                 });
             } catch (e) {
@@ -110,11 +116,8 @@
             document.getElementById('view-from').innerText = email.from || "Неизвестно";
             document.getElementById('view-date').innerText = email.date || "";
             
-            // Превращаем ссылки в кликабельные
-            const bodyText = email.body || "Текст письма отсутствует";
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            const linkedText = bodyText.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
-            document.getElementById('view-body').innerHTML = linkedText;
+            // Вставляем как HTML (там уже нет картинок, но есть ссылки)
+            document.getElementById('view-body').innerHTML = email.body || "Текст письма отсутствует";
             
             document.getElementById('reply-text').value = "";
             showView();
