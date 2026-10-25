@@ -4,29 +4,67 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Моя почта</title>
-    <!-- Обязательно подключаем скрипт Telegram -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: sans-serif; padding: 16px; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
-        button { margin-top: 10px; padding: 10px; width: 100%; }
+        .email { border: 1px solid var(--tg-theme-hint-color); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+        .email h3 { margin: 0 0 5px 0; font-size: 16px; }
+        .email p { margin: 5px 0; font-size: 14px; color: var(--tg-theme-hint-color); }
+        .loader { text-align: center; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h2>📥 Моя почта</h2>
-    <div id="content">Загрузка...</div>
+    <h2>📥 Входящие</h2>
+    <div id="content" class="loader">Загрузка писем...</div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.ready();   // Сообщаем Telegram, что страница готова
-        tg.expand();  // Разворачиваем на весь экран
+        tg.ready();
+        tg.expand();
 
-        // Просто показываем данные пользователя для проверки
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-            document.getElementById('content').innerText = `Привет, ${user.first_name}! Твой ID: ${user.id}`;
-        } else {
-            document.getElementById('content').innerText = 'Открой меня через Telegram!';
+        // СЮДА ВСТАВЬ ССЫЛКУ НА ТВОЙ СЕРВЕР (об этом в Шаге 4)
+        const API_URL = "https://твой-сервер.ngrok-free.app"; 
+
+        async function loadEmails() {
+            try {
+                const response = await fetch(API_URL + "/api/emails", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ initData: tg.initData })
+                });
+                const data = await response.json();
+                
+                const content = document.getElementById('content');
+                content.className = ""; // убираем лоадер
+                content.innerHTML = "";
+
+                if (data.error) {
+                    content.innerText = "Ошибка: " + data.error;
+                    return;
+                }
+
+                if (data.emails.length === 0) {
+                    content.innerText = "Писем нет.";
+                    return;
+                }
+
+                data.emails.forEach(em => {
+                    const div = document.createElement('div');
+                    div.className = 'email';
+                    div.innerHTML = `
+                        <h3>${em.subject}</h3>
+                        <p><b>От:</b> ${em.from}</p>
+                        <p>${em.body}...</p>
+                    `;
+                    content.appendChild(div);
+                });
+
+            } catch (e) {
+                document.getElementById('content').innerText = "Ошибка сети: " + e;
+            }
         }
+
+        loadEmails();
     </script>
 </body>
 </html>
