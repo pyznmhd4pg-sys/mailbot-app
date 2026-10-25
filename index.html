@@ -149,6 +149,26 @@
         .modal-content p { color: #5D4037; margin-bottom: 20px; }
         .modal-buttons { display: flex; gap: 10px; flex-direction: column; }
         .modal-buttons .btn { width: 100%; }
+
+        /* Стили для списка частых контактов */
+        .contact-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        .contact-chip {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 13px;
+            color: #3E2723;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .contact-chip:active { background: #D35400; color: white; }
     </style>
 </head>
 <body>
@@ -213,6 +233,10 @@
         <div class="modal-content">
             <h3>Переслать на Email</h3>
             <input type="email" id="forward-email-input" placeholder="example@mail.ru" autocomplete="email">
+            
+            <!-- Блок с частыми контактами -->
+            <div id="contact-suggestions" class="contact-suggestions"></div>
+
             <div class="modal-buttons" style="margin-top: 15px;">
                 <button class="btn btn-secondary" onclick="closeEmailForwardModal()">Отмена</button>
                 <button class="btn btn-primary" onclick="confirmEmailForward()">Отправить</button>
@@ -228,7 +252,7 @@
         tg.setHeaderColor('#FDEBD0');
         tg.setBackgroundColor('#FDEBD0');
 
-        const API_URL = "https://amend-widespread-fiction-upon.trycloudflare.com"; 
+        const API_URL = "https://anybody-raid-kay-requested.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -336,10 +360,35 @@
             tg.openTelegramLink(shareUrl);
         }
 
-        function openEmailForwardModal() {
+        async function openEmailForwardModal() {
             closeForwardModal();
-            document.getElementById('forward-email-input').value = "";
+            const input = document.getElementById('forward-email-input');
+            input.value = "";
+            
+            // Показываем модальное окно
             document.getElementById('email-forward-modal').classList.remove('hidden');
+            
+            // Загружаем частые контакты
+            const suggestionsDiv = document.getElementById('contact-suggestions');
+            suggestionsDiv.innerHTML = "Загрузка...";
+            
+            try {
+                const data = await apiRequest("/api/contacts", {});
+                suggestionsDiv.innerHTML = "";
+                if (data.contacts && data.contacts.length > 0) {
+                    data.contacts.slice(0, 10).forEach(contact => { // Берем первые 10
+                        const chip = document.createElement('div');
+                        chip.className = 'contact-chip';
+                        chip.innerText = contact;
+                        chip.onclick = () => {
+                            input.value = contact;
+                        };
+                        suggestionsDiv.appendChild(chip);
+                    });
+                }
+            } catch (e) {
+                suggestionsDiv.innerHTML = ""; // Просто скрываем, если не удалось загрузить
+            }
         }
         function closeEmailForwardModal() {
             document.getElementById('email-forward-modal').classList.add('hidden');
