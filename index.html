@@ -6,17 +6,81 @@
     <title>Моя почта</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 16px; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
-        .email { border: 1px solid var(--tg-theme-hint-color); border-radius: 8px; padding: 12px; margin-bottom: 10px; cursor: pointer; background: var(--tg-theme-secondary-bg-color); }
-        .email h3 { margin: 0 0 5px 0; font-size: 16px; }
-        .email p { margin: 5px 0; font-size: 14px; color: var(--tg-theme-hint-color); }
-        .btn { display: block; width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; text-align: center; }
-        .btn-primary { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); }
-        .btn-danger { background: #f44336; color: white; }
-        .btn-secondary { background: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color); border: 1px solid var(--tg-theme-hint-color); }
-        textarea { width: 100%; height: 100px; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid var(--tg-theme-hint-color); background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); box-sizing: border-box; }
+        /* Песчаный фон в стиле обоев Telegram */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            padding: 16px; 
+            margin: 0;
+            color: #3E2723; /* Темно-коричневый текст для контраста */
+            background-color: #FDEBD0;
+            background-image: 
+                radial-gradient(at 0% 0%, #F5CBA7 0px, transparent 50%),
+                radial-gradient(at 100% 0%, #E8C39E 0px, transparent 50%),
+                radial-gradient(at 100% 100%, #F5CBA7 0px, transparent 50%),
+                radial-gradient(at 0% 100%, #E8C39E 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        /* Стили для карточек писем (эффект стекла) */
+        .email { 
+            border: 1px solid rgba(255, 255, 255, 0.6); 
+            border-radius: 12px; 
+            padding: 14px; 
+            margin-bottom: 12px; 
+            cursor: pointer; 
+            background: rgba(255, 255, 255, 0.5); 
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.1s ease;
+        }
+        .email:active { transform: scale(0.98); }
+        
+        .email h3 { margin: 0 0 5px 0; font-size: 16px; color: #3E2723; }
+        .email p { margin: 5px 0; font-size: 14px; color: #5D4037; }
+        
+        /* Кнопки */
+        .btn { 
+            display: block; 
+            width: 100%; 
+            padding: 14px; 
+            margin-top: 10px; 
+            border: none; 
+            border-radius: 12px; 
+            font-size: 16px; 
+            font-weight: 600;
+            cursor: pointer; 
+            text-align: center;
+            transition: opacity 0.2s;
+        }
+        .btn:active { opacity: 0.8; }
+        .btn-primary { background: #D35400; color: white; box-shadow: 0 4px 10px rgba(211, 84, 0, 0.3); }
+        .btn-danger { background: #E74C3C; color: white; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
+        .btn-secondary { 
+            background: rgba(255, 255, 255, 0.7); 
+            color: #3E2723; 
+            border: 1px solid rgba(0,0,0,0.1); 
+            backdrop-filter: blur(5px);
+        }
+        
+        /* Поле ввода */
+        textarea { 
+            width: 100%; 
+            height: 100px; 
+            padding: 12px; 
+            margin-top: 10px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(0,0,0,0.1); 
+            background: rgba(255, 255, 255, 0.7); 
+            color: #3E2723; 
+            box-sizing: border-box; 
+            font-family: inherit;
+            resize: vertical;
+        }
+        textarea:focus { outline: 2px solid #D35400; background: rgba(255, 255, 255, 0.9); }
+
         .hidden { display: none; }
-        .error { color: red; text-align: center; margin-top: 20px; }
+        .error { color: #C0392B; text-align: center; margin-top: 20px; font-weight: bold; }
         
         #view-body { 
             margin-top: 15px; 
@@ -24,7 +88,15 @@
             white-space: pre-wrap; 
             font-size: 15px;
             line-height: 1.5;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
         }
+        
+        /* Заголовки на экране письма */
+        #view-subject { color: #3E2723; }
+        #screen-view p { color: #5D4037; }
     </style>
 </head>
 <body>
@@ -41,7 +113,7 @@
         
         <div id="view-body"></div>
         
-        <hr style="margin: 20px 0; border-color: var(--tg-theme-hint-color);">
+        <hr style="margin: 20px 0; border-color: rgba(0,0,0,0.1);">
         
         <textarea id="reply-text" placeholder="Текст ответа..."></textarea>
         <button class="btn btn-primary" onclick="sendReply()">✉️ Отправить ответ</button>
@@ -59,6 +131,10 @@
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
+        
+        // Устанавливаем цвет шапки Telegram под наш фон
+        tg.setHeaderColor('#FDEBD0');
+        tg.setBackgroundColor('#FDEBD0');
 
         const API_URL = "https://closely-sunny-variety-mlb.trycloudflare.com"; 
 
@@ -156,6 +232,7 @@
                     if (f.toUpperCase() === "INBOX") return;
                     const btn = document.createElement('button');
                     btn.className = "btn btn-secondary";
+                    btn.style.marginTop = "8px";
                     btn.innerText = f;
                     btn.onclick = () => moveEmail(f);
                     list.appendChild(btn);
