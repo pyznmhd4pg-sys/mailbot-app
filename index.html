@@ -57,7 +57,8 @@
         // ⚠️ ВСТАВЬ СЮДА АКТУАЛЬНУЮ ССЫЛКУ ИЗ ОКНА MANAGER
         const API_URL = "https://inspections-useful-missions-pitch.trycloudflare.com"; 
 
-        let currentEmailUid = null;
+        let allEmails = []; // Хранилище для загруженных писем
+        let currentEmail = null; // Текущее открытое письмо
 
         async function apiRequest(endpoint, body) {
             const response = await fetch(API_URL + endpoint, {
@@ -65,15 +66,9 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ initData: tg.initData, ...body })
             });
-            const text = await response.text();
-            
-            try {
-                const data = JSON.parse(text);
-                if (data.error) throw new Error(data.error);
-                return data;
-            } catch (e) {
-                throw new Error("Ошибка формата ответа: " + text.substring(0, 100));
-            }
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            return data;
         }
 
         // --- Экран списка ---
@@ -83,11 +78,13 @@
             try {
                 const data = await apiRequest("/api/emails", {});
                 list.innerHTML = "";
-                if (!data.emails || data.emails.length === 0) {
+                allEmails = data.emails || []; // Сохраняем письма в память
+                
+                if (allEmails.length === 0) {
                     list.innerText = "Писем нет.";
                     return;
                 }
-                data.emails.forEach(em => {
+                allEmails.forEach(em => {
                     const div = document.createElement('div');
                     div.className = 'email';
                     div.onclick = () => openEmail(em.uid);
@@ -99,26 +96,22 @@
             }
         }
 
-        // --- Открытие письма ---
-        async function openEmail(uid) {
-            currentEmailUid = uid;
-            try {
-                const data = await apiRequest(`/api/email/${uid}`, {});
-                
-                if (!data.email) {
-                    throw new Error("Сервер не вернул объект email");
-                }
-
-                document.getElementById('view-subject').innerText = data.email.subject || "(без темы)";
-                document.getElementById('view-from').innerText = data.email.from || "Неизвестно";
-                document.getElementById('view-date').innerText = data.email.date || "";
-                document.getElementById('view-body').innerText = data.email.body || "Текст письма отсутствует";
-                document.getElementById('reply-text').value = "";
-                showView();
-            } catch (e) {
-                // Выводим ошибку с подробностями
-                alert("ОШИБКА СЕРВЕРА:\n" + e.message);
+        // --- Открытие письма (из памяти) ---
+        function openEmail(uid) {
+            // Находим письмо в уже загруженном списке
+            const email = allEmails.find(e => String(e.uid) === String(uid));
+            if (!email) {
+                alert("Письмо не найдено в памяти. Обнови список.");
+                return;
             }
+            
+            currentEmail = email;
+            document.getElementById('view-subject').innerText = email.subject || "(без темы)";
+            document.getElementById('view-from').innerText = email.from || "Неизвестно";
+            document.getElementById('view-date').innerText = email.date || "";
+            document.getElementById('view-body').innerText = email.body || "Текст письма отсутствует";
+            document.getElementById('reply-text').value = "";
+            showView();
         }
 
         // --- Ответ ---
@@ -126,7 +119,7 @@
             const body = document.getElementById('reply-text').value;
             if (!body) return alert("Введи текст ответа!");
             try {
-                await apiRequest("/api/reply", { uid: currentEmailUid, body: body });
+                await apiRequest("/api/reply", { uid: currentEmail.uid, body: body });
                 alert("Ответ отправлен!");
                 document.getElementById('reply-text').value = "";
                 showList();
@@ -139,7 +132,7 @@
         async function deleteEmail() {
             if (!confirm("Удалить это письмо?")) return;
             try {
-                await apiRequest("/api/delete", { uid: currentEmailUid, folder: "INBOX" });
+                await apiRequest("/api/delete", { uid: currentEmail.uid, folder: "INBOX" });
                 alert("Удалено!");
                 showList();
             } catch (e) {
@@ -169,7 +162,7 @@
 
         async function moveEmail(dest) {
             try {
-                await apiRequest("/api/move", { uid: currentEmailUid, source: "INBOX", destination: dest });
+                await apiRequest("/api/move", { uid: currentEmail.uid, source: "INBOX", destination: dest });
                 alert(`Перемещено в ${dest}`);
                 showList();
             } catch (e) {
