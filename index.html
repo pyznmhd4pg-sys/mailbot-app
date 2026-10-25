@@ -91,9 +91,8 @@
             backdrop-filter: blur(5px);
         }
         
-        textarea { 
+        textarea, input[type="email"] { 
             width: 100%; 
-            height: 100px; 
             padding: 12px; 
             margin-top: 10px; 
             border-radius: 12px; 
@@ -102,13 +101,12 @@
             color: #3E2723; 
             box-sizing: border-box; 
             font-family: inherit;
-            resize: vertical;
+            font-size: 15px;
         }
-        textarea:focus { outline: 2px solid #D35400; background: rgba(255, 255, 255, 1); }
+        textarea { height: 100px; resize: vertical; }
+        textarea:focus, input[type="email"]:focus { outline: 2px solid #D35400; background: rgba(255, 255, 255, 1); }
 
-        /* Универсальный класс для скрытия элементов */
         .hidden { display: none !important; }
-        
         .error { color: #C0392B; text-align: center; margin-top: 20px; font-weight: bold; }
         
         #view-body { 
@@ -127,7 +125,6 @@
         #view-subject { color: #3E2723; margin: 0; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); }
         #screen-view p { color: #5D4037; margin: 5px 0; }
 
-        /* Модальное окно подтверждения */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -137,10 +134,6 @@
             justify-content: center;
             z-index: 1000;
             backdrop-filter: blur(3px);
-        }
-        /* По умолчанию окно скрыто (display: none) */
-        .modal-overlay.hidden {
-            display: none;
         }
         .modal-content {
             background: #FDEBD0;
@@ -154,18 +147,16 @@
         }
         .modal-content h3 { margin-top: 0; color: #3E2723; }
         .modal-content p { color: #5D4037; margin-bottom: 20px; }
-        .modal-buttons { display: flex; gap: 10px; }
-        .modal-buttons .btn { flex: 1; }
+        .modal-buttons { display: flex; gap: 10px; flex-direction: column; }
+        .modal-buttons .btn { width: 100%; }
     </style>
 </head>
 <body>
-    <!-- ЭКРАН 1: Список писем -->
     <div id="screen-list">
         <h2>📥 Входящие</h2>
         <div id="email-list">Загрузка...</div>
     </div>
 
-    <!-- ЭКРАН 2: Просмотр письма -->
     <div id="screen-view" class="hidden">
         <div class="email-header">
             <h2 id="view-subject"></h2>
@@ -183,20 +174,18 @@
         
         <div class="action-grid">
             <button class="btn btn-primary" onclick="sendReply()">↩️ Ответить</button>
-            <button class="btn btn-secondary" onclick="forwardEmail()">➡️ Переслать</button>
+            <button class="btn btn-secondary" onclick="openForwardModal()">➡️ Переслать</button>
             <button class="btn btn-secondary" onclick="showMoveMenu()">📂 Переместить</button>
             <button class="btn btn-danger" onclick="openDeleteModal()">🗑 Удалить</button>
         </div>
     </div>
 
-    <!-- ЭКРАН 3: Меню перемещения -->
     <div id="screen-move" class="hidden">
         <button class="btn btn-secondary" style="width: 100%; margin-bottom: 15px;" onclick="showView()">⬅️ Отмена</button>
         <h3>Выбери папку:</h3>
         <div id="folder-list"></div>
     </div>
 
-    <!-- Модальное окно подтверждения удаления (по умолчанию hidden) -->
     <div id="delete-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h3>Удалить письмо?</h3>
@@ -204,6 +193,29 @@
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="closeDeleteModal()">Отмена</button>
                 <button class="btn btn-danger" onclick="confirmDelete()">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="forward-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Переслать письмо</h3>
+            <p>Куда вы хотите переслать это письмо?</p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="forwardToTelegram()">✈️ В Telegram</button>
+                <button class="btn btn-secondary" onclick="openEmailForwardModal()">✉️ На Email</button>
+                <button class="btn btn-secondary" style="background: transparent; border: none; margin-top: 10px;" onclick="closeForwardModal()">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="email-forward-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Переслать на Email</h3>
+            <input type="email" id="forward-email-input" placeholder="example@mail.ru" autocomplete="email">
+            <div class="modal-buttons" style="margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeEmailForwardModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="confirmEmailForward()">Отправить</button>
             </div>
         </div>
     </div>
@@ -216,7 +228,7 @@
         tg.setHeaderColor('#FDEBD0');
         tg.setBackgroundColor('#FDEBD0');
 
-        const API_URL = "https://texture-hammer-years-alike.trycloudflare.com"; 
+        const API_URL = "https://amend-widespread-fiction-upon.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -292,21 +304,12 @@
             }
         }
 
-        function forwardEmail() {
-            if (!currentEmail) return;
-            const textToShare = `Тема: ${currentEmail.subject}\nОт: ${currentEmail.from}\n\n${currentEmail.body}`;
-            const shareUrl = `https://t.me/share/url?url=&text=${encodeURIComponent(textToShare)}`;
-            tg.openTelegramLink(shareUrl);
-        }
-
         function openDeleteModal() {
             document.getElementById('delete-modal').classList.remove('hidden');
         }
-        
         function closeDeleteModal() {
             document.getElementById('delete-modal').classList.add('hidden');
         }
-        
         async function confirmDelete() {
             closeDeleteModal();
             try {
@@ -315,6 +318,43 @@
                 showList();
             } catch (e) {
                 alert("Ошибка при удалении: " + e.message);
+            }
+        }
+
+        function openForwardModal() {
+            document.getElementById('forward-modal').classList.remove('hidden');
+        }
+        function closeForwardModal() {
+            document.getElementById('forward-modal').classList.add('hidden');
+        }
+
+        function forwardToTelegram() {
+            closeForwardModal();
+            if (!currentEmail) return;
+            const textToShare = `Тема: ${currentEmail.subject}\nОт: ${currentEmail.from}\n\n${currentEmail.body}`;
+            const shareUrl = `https://t.me/share/url?url=&text=${encodeURIComponent(textToShare)}`;
+            tg.openTelegramLink(shareUrl);
+        }
+
+        function openEmailForwardModal() {
+            closeForwardModal();
+            document.getElementById('forward-email-input').value = "";
+            document.getElementById('email-forward-modal').classList.remove('hidden');
+        }
+        function closeEmailForwardModal() {
+            document.getElementById('email-forward-modal').classList.add('hidden');
+        }
+        async function confirmEmailForward() {
+            const emailInput = document.getElementById('forward-email-input').value.trim();
+            if (!emailInput) return alert("Введите email!");
+            
+            closeEmailForwardModal();
+            
+            try {
+                await apiRequest("/api/forward", { uid: currentEmail.uid, to_email: emailInput });
+                alert("Письмо успешно переслано!");
+            } catch (e) {
+                alert("Ошибка при пересылке: " + e.message);
             }
         }
 
@@ -350,13 +390,11 @@
         }
 
         function showScreen(id) {
-            // Скрываем все экраны
             document.querySelectorAll('body > div').forEach(d => {
-                if (d.id !== 'delete-modal') { // Не трогаем модальное окно здесь
+                if (d.id !== 'delete-modal' && d.id !== 'forward-modal' && d.id !== 'email-forward-modal') {
                     d.classList.add('hidden');
                 }
             });
-            // Показываем нужный
             document.getElementById(id).classList.remove('hidden');
             window.scrollTo(0, 0);
         }
