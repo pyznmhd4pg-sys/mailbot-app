@@ -10,10 +10,11 @@
         .email { border: 1px solid var(--tg-theme-hint-color); border-radius: 8px; padding: 12px; margin-bottom: 10px; cursor: pointer; background: var(--tg-theme-secondary-bg-color); }
         .email h3 { margin: 0 0 5px 0; font-size: 16px; }
         .email p { margin: 5px 0; font-size: 14px; color: var(--tg-theme-hint-color); }
-        .btn { display: block; width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .btn { display: block; width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; text-align: center; }
         .btn-primary { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); }
         .btn-danger { background: #f44336; color: white; }
         .btn-secondary { background: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color); border: 1px solid var(--tg-theme-hint-color); }
+        .btn-link { background: transparent; color: var(--tg-theme-link-color); text-decoration: underline; }
         textarea { width: 100%; height: 100px; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid var(--tg-theme-hint-color); background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); box-sizing: border-box; }
         .hidden { display: none; }
         .error { color: red; text-align: center; margin-top: 20px; }
@@ -38,12 +39,16 @@
         <h2 id="view-subject" style="margin-top: 15px;"></h2>
         <p><b>От:</b> <span id="view-from"></span></p>
         <p><b>Дата:</b> <span id="view-date"></span></p>
+        
         <div id="view-body"></div>
         
         <hr style="margin: 20px 0; border-color: var(--tg-theme-hint-color);">
         
         <textarea id="reply-text" placeholder="Текст ответа..."></textarea>
         <button class="btn btn-primary" onclick="sendReply()">✉️ Отправить ответ</button>
+        
+        <button id="btn-original" class="btn btn-link" onclick="openOriginal()">🌐 Открыть оригинал в почте</button>
+        
         <button class="btn btn-danger" onclick="deleteEmail()">🗑 Удалить</button>
         <button class="btn btn-secondary" onclick="showMoveMenu()">📂 Переместить</button>
     </div>
@@ -59,7 +64,7 @@
         tg.ready();
         tg.expand();
 
-        const API_URL = "https://wing-gender-courage-thin.trycloudflare.com"; 
+        const API_URL = "https://involved-wines-apparatus-vbulletin.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -112,11 +117,28 @@
             document.getElementById('view-from').innerText = email.from || "Неизвестно";
             document.getElementById('view-date').innerText = email.date || "";
             
-            // Выводим чистый текст
-            document.getElementById('view-body').textContent = email.body || "Текст письма отсутствует";
+            let bodyText = email.body || "";
+            if (bodyText.trim() === "") {
+                bodyText = "(В этом письме нет текста, только картинки или ссылки. Нажми кнопку 'Открыть оригинал' ниже.)";
+            }
+            document.getElementById('view-body').textContent = bodyText;
+            
+            // Настраиваем кнопку "Открыть оригинал"
+            const btnOriginal = document.getElementById('btn-original');
+            if (email.original_url) {
+                btnOriginal.style.display = "block";
+            } else {
+                btnOriginal.style.display = "none";
+            }
             
             document.getElementById('reply-text').value = "";
             showView();
+        }
+
+        function openOriginal() {
+            if (currentEmail && currentEmail.original_url) {
+                tg.openLink(currentEmail.original_url);
+            }
         }
 
         async function sendReply() {
