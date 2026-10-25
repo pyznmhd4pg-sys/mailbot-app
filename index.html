@@ -6,28 +6,48 @@
     <title>Моя почта</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { 
-            font-family: sans-serif; 
-            padding: 16px; 
-            background: var(--tg-theme-bg-color); 
-            color: var(--tg-theme-text-color); 
-        }
-        .email { 
-            border: 1px solid var(--tg-theme-hint-color); 
-            border-radius: 8px; 
-            padding: 12px; 
-            margin-bottom: 10px; 
-            background: var(--tg-theme-secondary-bg-color);
-        }
+        body { font-family: sans-serif; padding: 16px; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
+        .email { border: 1px solid var(--tg-theme-hint-color); border-radius: 8px; padding: 12px; margin-bottom: 10px; cursor: pointer; background: var(--tg-theme-secondary-bg-color); }
         .email h3 { margin: 0 0 5px 0; font-size: 16px; }
         .email p { margin: 5px 0; font-size: 14px; color: var(--tg-theme-hint-color); }
-        .loader { text-align: center; margin-top: 20px; }
-        .error { color: red; text-align: center; margin-top: 20px; word-wrap: break-word; }
+        .btn { display: block; width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .btn-primary { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); }
+        .btn-danger { background: #f44336; color: white; }
+        .btn-secondary { background: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color); border: 1px solid var(--tg-theme-hint-color); }
+        textarea { width: 100%; height: 100px; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid var(--tg-theme-hint-color); background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); box-sizing: border-box; }
+        .hidden { display: none; }
+        .error { color: red; text-align: center; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h2>📥 Входящие</h2>
-    <div id="content" class="loader">Загрузка писем...</div>
+    <!-- ЭКРАН 1: Список писем -->
+    <div id="screen-list">
+        <h2>📥 Входящие</h2>
+        <div id="email-list">Загрузка...</div>
+    </div>
+
+    <!-- ЭКРАН 2: Просмотр письма -->
+    <div id="screen-view" class="hidden">
+        <button class="btn btn-secondary" onclick="showList()">⬅️ Назад</button>
+        <h2 id="view-subject" style="margin-top: 15px;"></h2>
+        <p><b>От:</b> <span id="view-from"></span></p>
+        <p><b>Дата:</b> <span id="view-date"></span></p>
+        <div id="view-body" style="margin-top: 15px; white-space: pre-wrap;"></div>
+        
+        <hr style="margin: 20px 0; border-color: var(--tg-theme-hint-color);">
+        
+        <textarea id="reply-text" placeholder="Текст ответа..."></textarea>
+        <button class="btn btn-primary" onclick="sendReply()">✉️ Отправить ответ</button>
+        <button class="btn btn-danger" onclick="deleteEmail()">🗑 Удалить</button>
+        <button class="btn btn-secondary" onclick="showMoveMenu()">📂 Переместить</button>
+    </div>
+
+    <!-- ЭКРАН 3: Меню перемещения -->
+    <div id="screen-move" class="hidden">
+        <button class="btn btn-secondary" onclick="showView()">⬅️ Отмена</button>
+        <h3>Выбери папку:</h3>
+        <div id="folder-list">Загрузка...</div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -35,59 +55,123 @@
         tg.expand();
 
         // ⚠️ ВСТАВЬ СЮДА АКТУАЛЬНУЮ ССЫЛКУ ИЗ ОКНА MANAGER
-        const API_URL = "https://consolidated-warrior-utilize-publishing.trycloudflare.com"; 
+        const API_URL = "https://cameras-bean-carpet-graphics.trycloudflare.com"; 
 
+        let currentEmailUid = null;
+
+        async function apiRequest(endpoint, body) {
+            const response = await fetch(API_URL + endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ initData: tg.initData, ...body })
+            });
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            return data;
+        }
+
+        // --- Экран списка ---
         async function loadEmails() {
+            const list = document.getElementById('email-list');
             try {
-                const response = await fetch(API_URL + "/api/emails", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ initData: tg.initData })
-                });
-                
-                // Если сервер вернул ошибку (например, 404 или 500)
-                if (!response.ok) {
-                    throw new Error(`Сервер вернул статус ${response.status}`);
-                }
-
-                const data = await response.json();
-                const content = document.getElementById('content');
-                content.className = ""; // убираем лоадер
-                content.innerHTML = "";
-
-                if (data.error) {
-                    content.className = "error";
-                    content.innerText = "Ошибка сервера: " + data.error;
-                    return;
-                }
-
+                const data = await apiRequest("/api/emails", {});
+                list.innerHTML = "";
                 if (!data.emails || data.emails.length === 0) {
-                    content.innerText = "Писем нет.";
+                    list.innerText = "Писем нет.";
                     return;
                 }
-
                 data.emails.forEach(em => {
                     const div = document.createElement('div');
                     div.className = 'email';
-                    div.innerHTML = `
-                        <h3>${em.subject}</h3>
-                        <p><b>От:</b> ${em.from}</p>
-                        <p>${em.body}...</p>
-                    `;
-                    content.appendChild(div);
+                    div.onclick = () => openEmail(em.uid);
+                    div.innerHTML = `<h3>${em.subject}</h3><p><b>От:</b> ${em.from}</p><p>${em.body.substring(0, 100)}...</p>`;
+                    list.appendChild(div);
                 });
-
             } catch (e) {
-                // Выводим ошибку прямо на экран
-                const content = document.getElementById('content');
-                content.className = "error";
-                content.innerHTML = `
-                    <b>Ошибка сети</b><br>
-                    ${e.message}<br><br>
-                    <small>Проверь ссылку API: ${API_URL}</small>
-                `;
+                list.innerHTML = `<div class="error">Ошибка: ${e.message}</div>`;
             }
         }
+
+        // --- Открытие письма ---
+        async function openEmail(uid) {
+            currentEmailUid = uid;
+            try {
+                const data = await apiRequest(`/api/email/${uid}`, {});
+                document.getElementById('view-subject').innerText = data.email.subject;
+                document.getElementById('view-from').innerText = data.email.from;
+                document.getElementById('view-date').innerText = data.email.date;
+                document.getElementById('view-body').innerText = data.email.body;
+                document.getElementById('reply-text').value = "";
+                showView();
+            } catch (e) {
+                alert("Ошибка: " + e.message);
+            }
+        }
+
+        // --- Ответ ---
+        async function sendReply() {
+            const body = document.getElementById('reply-text').value;
+            if (!body) return alert("Введи текст ответа!");
+            try {
+                await apiRequest("/api/reply", { uid: currentEmailUid, body: body });
+                alert("Ответ отправлен!");
+                document.getElementById('reply-text').value = "";
+                showList();
+            } catch (e) {
+                alert("Ошибка: " + e.message);
+            }
+        }
+
+        // --- Удаление ---
+        async function deleteEmail() {
+            if (!confirm("Удалить это письмо?")) return;
+            try {
+                await apiRequest("/api/delete", { uid: currentEmailUid, folder: "INBOX" });
+                alert("Удалено!");
+                showList();
+            } catch (e) {
+                alert("Ошибка: " + e.message);
+            }
+        }
+
+        // --- Перемещение ---
+        async function showMoveMenu() {
+            try {
+                const data = await apiRequest("/api/folders", {});
+                const list = document.getElementById('folder-list');
+                list.innerHTML = "";
+                data.folders.forEach(f => {
+                    if (f.toUpperCase() === "INBOX") return;
+                    const btn = document.createElement('button');
+                    btn.className = "btn btn-secondary";
+                    btn.innerText = f;
+                    btn.onclick = () => moveEmail(f);
+                    list.appendChild(btn);
+                });
+                showScreen('screen-move');
+            } catch (e) {
+                alert("Ошибка: " + e.message);
+            }
+        }
+
+        async function moveEmail(dest) {
+            try {
+                await apiRequest("/api/move", { uid: currentEmailUid, source: "INBOX", destination: dest });
+                alert(`Перемещено в ${dest}`);
+                showList();
+            } catch (e) {
+                alert("Ошибка: " + e.message);
+            }
+        }
+
+        // --- Навигация ---
+        function showScreen(id) {
+            document.querySelectorAll('body > div').forEach(d => d.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+        function showList() { loadEmails(); showScreen('screen-list'); }
+        function showView() { showScreen('screen-view'); }
 
         loadEmails();
     </script>
