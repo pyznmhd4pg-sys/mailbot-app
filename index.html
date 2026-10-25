@@ -18,8 +18,13 @@
         .hidden { display: none; }
         .error { color: red; text-align: center; margin-top: 20px; }
         
-        #view-body { margin-top: 15px; overflow-wrap: break-word; white-space: pre-wrap; font-size: 15px; line-height: 1.5; }
-        #view-screenshot { width: 100%; border-radius: 8px; margin-top: 15px; border: 1px solid var(--tg-theme-hint-color); }
+        #view-body { 
+            margin-top: 15px; 
+            overflow-wrap: break-word;
+            white-space: pre-wrap; 
+            font-size: 15px;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
@@ -34,10 +39,6 @@
         <p><b>От:</b> <span id="view-from"></span></p>
         <p><b>Дата:</b> <span id="view-date"></span></p>
         
-        <!-- Блок для картинки -->
-        <img id="view-screenshot" class="hidden" src="" alt="Письмо" />
-        
-        <!-- Блок для текста -->
         <div id="view-body"></div>
         
         <hr style="margin: 20px 0; border-color: var(--tg-theme-hint-color);">
@@ -59,7 +60,7 @@
         tg.ready();
         tg.expand();
 
-        const API_URL = "https://water-blonde-albuquerque-salt.trycloudflare.com"; 
+        const API_URL = "https://dosage-shannon-char-alerts.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -91,7 +92,7 @@
                     const div = document.createElement('div');
                     div.className = 'email';
                     div.onclick = () => openEmail(em.uid);
-                    const previewText = em.screenshot ? "[Изображение]" : (em.body || "").substring(0, 100);
+                    const previewText = (em.body || "").substring(0, 100);
                     div.innerHTML = `<h3>${em.subject || "(без темы)"}</h3><p><b>От:</b> ${em.from}</p><p>${previewText}...</p>`;
                     list.appendChild(div);
                 });
@@ -112,20 +113,11 @@
             document.getElementById('view-from').innerText = email.from || "Неизвестно";
             document.getElementById('view-date').innerText = email.date || "";
             
-            const imgElement = document.getElementById('view-screenshot');
-            const bodyElement = document.getElementById('view-body');
-
-            // Если сервер прислал картинку — показываем её
-            if (email.screenshot) {
-                imgElement.src = `${API_URL}/static/${email.screenshot}`;
-                imgElement.classList.remove('hidden');
-                bodyElement.classList.add('hidden');
-            } else {
-                // Иначе показываем текст
-                imgElement.classList.add('hidden');
-                bodyElement.classList.remove('hidden');
-                bodyElement.textContent = email.body || "(Письмо пустое)";
+            let bodyText = email.body || "";
+            if (bodyText.trim() === "") {
+                bodyText = "(В этом письме нет текста, только картинки или ссылки.)";
             }
+            document.getElementById('view-body').textContent = bodyText;
             
             document.getElementById('reply-text').value = "";
             showView();
