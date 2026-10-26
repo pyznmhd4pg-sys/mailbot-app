@@ -191,6 +191,8 @@
 <body>
     <div id="screen-list">
         <h2>📥 Входящие</h2>
+        <!-- Сюда мы выведем отладочную информацию, если будет ошибка -->
+        <div id="debug-info" style="color: red; font-size: 12px; margin-bottom: 10px;"></div>
         <div id="email-list">Загрузка...</div>
     </div>
 
@@ -272,21 +274,40 @@
         tg.setHeaderColor('#FDEBD0');
         tg.setBackgroundColor('#FDEBD0');
 
-        // ⚠️ ВСТАВЬ СЮДА ССЫЛКУ ИЗ ОКНА MAILBOT
+        // ⚠️ ЕДИНСТВЕННОЕ МЕСТО, ГДЕ НУЖНО МЕНЯТЬ ССЫЛКУ
         const API_URL = "https://jewellery-son-sticks-injured.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
 
         async function apiRequest(endpoint, body) {
-            const response = await fetch(API_URL + endpoint, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ initData: tg.initData, ...body })
-            });
-            const data = await response.json();
-            if (data.error) throw new Error(data.error);
-            return data;
+            const fullUrl = API_URL + endpoint;
+            
+            // Выводим адрес на экран для отладки
+            document.getElementById('debug-info').innerText = "Запрос: " + fullUrl;
+
+            try {
+                const response = await fetch(fullUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ initData: tg.initData, ...body })
+                });
+                
+                const text = await response.text(); // Читаем как текст, чтобы увидеть любую ошибку
+                
+                try {
+                    const data = JSON.parse(text);
+                    if (data.error) throw new Error(data.error);
+                    document.getElementById('debug-info').innerText = ""; // Убираем отладку при успехе
+                    return data;
+                } catch (e) {
+                    throw new Error("Ответ сервера: " + text);
+                }
+            } catch (e) {
+                // Если fetch упал (например, CORS или нет сети)
+                document.getElementById('debug-info').innerText = "ОШИБКА СЕТИ: " + e.message;
+                throw e;
+            }
         }
 
         async function loadEmails() {
@@ -297,7 +318,6 @@
                 list.innerHTML = "";
                 allEmails = data.emails || []; 
                 
-                // ИСПРАВЛЕНА ОШИБКА: добавлена закрывающая скобка
                 if (allEmails.length === 0) {
                     list.innerText = "Писем нет.";
                     return;
@@ -312,16 +332,13 @@
                     list.appendChild(div);
                 });
             } catch (e) {
-                list.innerHTML = `<div class="error">Ошибка: ${e.message}</div>`;
+                list.innerHTML = `<div class="error">Не удалось загрузить письма.</div>`;
             }
         }
 
         function openEmail(uid) {
             const email = allEmails.find(e => String(e.uid) === String(uid));
-            if (!email) {
-                alert("Письмо не найдено в памяти. Обнови список.");
-                return;
-            }
+            if (!email) return;
             
             currentEmail = email;
             document.getElementById('view-subject').innerText = email.subject || "(без темы)";
