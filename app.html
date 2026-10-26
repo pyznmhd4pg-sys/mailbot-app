@@ -3,16 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Отладка списка</title>
+    <title>Тест вложений</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: sans-serif; padding: 16px; background: #FDEBD0; color: #3E2723; }
-        .email-item { border-bottom: 1px solid #ccc; padding: 10px 0; }
-        .error { color: red; }
+        .item { border-bottom: 1px solid #ccc; padding: 10px 0; }
+        .green { color: green; font-weight: bold; }
+        .red { color: red; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h3>Список писем:</h3>
+    <h3>Поиск вложений:</h3>
     <div id="debug">Загрузка...</div>
 
     <script>
@@ -36,16 +37,24 @@
                 
                 if (data.emails && data.emails.length > 0) {
                     data.emails.forEach(em => {
-                        const div = document.createElement('div');
-                        div.className = 'email-item';
-                        
-                        // Считаем количество вложений
-                        const attCount = em.attachments ? em.attachments.length : 0;
-                        const attText = attCount > 0 ? `<b style="color:green;">📎 Вложений: ${attCount}</b>` : `<span style="color:gray;">Без вложений</span>`;
-                        
-                        div.innerHTML = `<b>${em.subject}</b><br>От: ${em.from_name}<br>${attText}`;
-                        debugDiv.appendChild(div);
+                        // Ищем письмо, в котором есть слово Транзит или СК
+                        if (em.subject.includes("Транзит") || em.subject.includes("ТК") || em.subject.includes("документ")) {
+                            const div = document.createElement('div');
+                            div.className = 'item';
+                            
+                            const attCount = em.attachments ? em.attachments.length : 0;
+                            const attText = attCount > 0 
+                                ? `<span class="green">📎 Найдено вложений: ${attCount}!</span><br>${JSON.stringify(em.attachments)}` 
+                                : `<span class="red">Вложений нет в этом письме</span>`;
+                            
+                            div.innerHTML = `<b>Тема: ${em.subject}</b><br>${attText}`;
+                            debugDiv.appendChild(div);
+                        }
                     });
+                    
+                    if (debugDiv.innerHTML === "") {
+                        debugDiv.innerHTML = "Письмо с темой 'Транзит' не найдено в последних 10 письмах.";
+                    }
                 } else {
                     debugDiv.innerText = "Писем нет.";
                 }
