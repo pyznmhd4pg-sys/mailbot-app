@@ -9,6 +9,7 @@
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             padding: 16px; 
+            padding-top: 60px; /* Отступ для фиксированной панели */
             margin: 0;
             color: #3E2723; 
             background-color: #FDEBD0;
@@ -20,6 +21,37 @@
                 radial-gradient(at 0% 100%, #E8C39E 0px, transparent 50%);
             background-attachment: fixed;
             background-size: 200px 200px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+
+        /* Верхняя панель навигации */
+        .top-nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            display: flex;
+            background: rgba(253, 235, 208, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            z-index: 100;
+            padding: 10px 16px;
+            gap: 10px;
+        }
+        .nav-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #5D4037;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: center;
+        }
+        .nav-btn.active {
+            background: #D35400;
+            color: white;
         }
 
         .email { 
@@ -189,8 +221,14 @@
     </style>
 </head>
 <body>
+    <!-- Верхняя навигация -->
+    <div class="top-nav" id="top-nav">
+        <button class="nav-btn" onclick="loadEmails('INBOX')">📥 Входящие</button>
+        <button class="nav-btn" onclick="loadFolders()">📂 Папки</button>
+        <button class="nav-btn" onclick="loadEmails('Trash')">🗑 Корзина</button>
+    </div>
+
     <div id="screen-list">
-        <h2>📥 Входящие</h2>
         <div id="email-list">Загрузка...</div>
     </div>
 
@@ -272,12 +310,12 @@
         tg.setHeaderColor('#FDEBD0');
         tg.setBackgroundColor('#FDEBD0');
 
-        // Читаем API_URL из параметров, которые передал бот
         const urlParams = new URLSearchParams(window.location.search);
         const API_URL = urlParams.get('api') || window.location.origin;
 
         let allEmails = []; 
         let currentEmail = null; 
+        let currentFolder = "INBOX";
 
         async function apiRequest(endpoint, body) {
             const response = await fetch(API_URL + endpoint, {
@@ -290,16 +328,31 @@
             return data;
         }
 
-        async function loadEmails() {
+        // Подсветка активной кнопки
+        function setActiveNav(index) {
+            const btns = document.querySelectorAll('.nav-btn');
+            btns.forEach((btn, i) => {
+                if (i === index) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+        }
+
+        async function loadEmails(folder = "INBOX") {
+            currentFolder = folder;
+            setActiveNav(folder === "INBOX" ? 0 : (folder === "Trash" ? 2 : -1));
+            
+            showScreen('screen-list');
             const list = document.getElementById('email-list');
             list.innerHTML = "Загрузка...";
+            
             try {
-                const data = await apiRequest("/api/emails", {});
+                // Используем эндпоинт для получения писем из конкретной папки
+                const data = await apiRequest("/api/folder_emails", { folder: folder });
                 list.innerHTML = "";
                 allEmails = data.emails || []; 
                 
                 if (allEmails.length === 0) {
-                    list.innerText = "Писем нет.";
+                    list.innerHTML = `<div style="text-align:center; margin-top:20px;">В папке «${folder}» пусто.</div>`;
                     return;
                 }
                 allEmails.forEach(em => {
@@ -309,6 +362,28 @@
                     const previewText = (em.body || "").substring(0, 100);
                     const senderDisplay = em.from_name && em.from_name !== em.from ? `${em.from_name}` : em.from;
                     div.innerHTML = `<h3>${em.subject || "(без темы)"}</h3><p><b>От:</b> ${senderDisplay}</p><p>${previewText}...</p>`;
+                    list.appendChild(div);
+                });
+            } catch (e) {
+                list.innerHTML = `<div class="error">Ошибка: ${e.message}</div>`;
+            }
+        }
+
+        async function loadFolders() {
+            setActiveNav(1);
+            showScreen('screen-list');
+            const list = document.getElementById('email-list');
+            list.innerHTML = "Загрузка папок...";
+            
+            try {
+                const data = await apiRequest("/api/folders", {});
+                list.innerHTML = "";
+                data.folders.forEach(f => {
+                    const div = document.createElement('div');
+                    div.className = 'email';
+                    // По клику на папку открываем её
+                    div.onclick = () => loadEmails(f);
+                    div.innerHTML = `<h3>📁 ${f}</h3>`;
                     list.appendChild(div);
                 });
             } catch (e) {
@@ -333,7 +408,7 @@
             document.getElementById('view-body').textContent = bodyText;
             
             document.getElementById('reply-text').value = "";
-            showView();
+            showScreen('screen-view');
         }
 
         async function sendReply() {
@@ -343,7 +418,7 @@
                 await apiRequest("/api/reply", { uid: currentEmail.uid, body: body });
                 alert("Ответ отправлен!");
                 document.getElementById('reply-text').value = "";
-                showList();
+                loadEmails(currentFolder);
             } catch (e) {
                 alert("Ошибка: " + e.message);
             }
@@ -358,9 +433,9 @@
         async function confirmDelete() {
             closeDeleteModal();
             try {
-                await apiRequest("/api/delete", { uid: currentEmail.uid, folder: "INBOX" });
+                await apiRequest("/api/delete", { uid: currentEmail.uid, folder: currentFolder });
                 alert("Письмо удалено!");
-                showList();
+                loadEmails(currentFolder);
             } catch (e) {
                 alert("Ошибка при удалении: " + e.message);
             }
@@ -443,7 +518,7 @@
                 const list = document.getElementById('folder-list');
                 list.innerHTML = "";
                 data.folders.forEach(f => {
-                    if (f.toUpperCase() === "INBOX") return;
+                    if (f === currentFolder) return;
                     const btn = document.createElement('button');
                     btn.className = "btn btn-secondary";
                     btn.style.marginTop = "8px";
@@ -460,9 +535,9 @@
 
         async function moveEmail(dest) {
             try {
-                await apiRequest("/api/move", { uid: currentEmail.uid, source: "INBOX", destination: dest });
+                await apiRequest("/api/move", { uid: currentEmail.uid, source: currentFolder, destination: dest });
                 alert(`Перемещено в ${dest}`);
-                showList();
+                loadEmails(currentFolder);
             } catch (e) {
                 alert("Ошибка: " + e.message);
             }
@@ -470,7 +545,7 @@
 
         function showScreen(id) {
             document.querySelectorAll('body > div').forEach(d => {
-                if (d.id !== 'delete-modal' && d.id !== 'forward-modal' && d.id !== 'email-forward-modal') {
+                if (d.id !== 'delete-modal' && d.id !== 'forward-modal' && d.id !== 'email-forward-modal' && d.id !== 'top-nav') {
                     d.classList.add('hidden');
                 }
             });
@@ -478,10 +553,11 @@
             window.scrollTo(0, 0);
         }
         
-        function showList() { loadEmails(); showScreen('screen-list'); }
+        function showList() { showScreen('screen-list'); }
         function showView() { showScreen('screen-view'); }
 
-        loadEmails();
+        // Инициализация при запуске
+        loadEmails('INBOX');
     </script>
 </body>
 </html>
