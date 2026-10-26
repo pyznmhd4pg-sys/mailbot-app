@@ -173,7 +173,6 @@
         }
         .contact-chip:active { background: #D35400; color: white; }
 
-        /* Контейнер для кнопки "Готово" над клавиатурой (опционально, если нужно) */
         .keyboard-dismiss {
             display: flex;
             justify-content: flex-end;
@@ -250,10 +249,8 @@
     <div id="email-forward-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h3>Переслать на Email</h3>
-            <!-- Поле ввода с обработчиком Enter -->
             <input type="email" id="forward-email-input" placeholder="example@mail.ru" autocomplete="email" onkeydown="if(event.key === 'Enter') this.blur()">
             
-            <!-- Кнопка "Готово" для скрытия клавиатуры -->
             <div class="keyboard-dismiss">
                 <button onclick="document.activeElement.blur()">Готово</button>
             </div>
@@ -275,7 +272,8 @@
         tg.setHeaderColor('#FDEBD0');
         tg.setBackgroundColor('#FDEBD0');
 
-        const API_URL = "https://keywords-ala-nato-breakfast.trycloudflare.com"; 
+        // ⚠️ ВСТАВЬ СЮДА ССЫЛКУ ИЗ ОКНА MAILBOT
+        const API_URL = "https://participants-petition-shepherd-terrain.trycloudflare.com"; 
 
         let allEmails = []; 
         let currentEmail = null; 
@@ -299,7 +297,8 @@
                 list.innerHTML = "";
                 allEmails = data.emails || []; 
                 
-                if (allEmails.length === 0 {
+                // ИСПРАВЛЕНА ОШИБКА: добавлена закрывающая скобка
+                if (allEmails.length === 0) {
                     list.innerText = "Писем нет.";
                     return;
                 }
@@ -413,7 +412,7 @@
                         
                         chip.onclick = () => {
                             input.value = contact.email; 
-                            input.blur(); // Скрываем клавиатуру при выборе контакта
+                            input.blur(); 
                         };
                         suggestionsDiv.appendChild(chip);
                     });
@@ -426,7 +425,6 @@
             document.getElementById('email-forward-modal').classList.add('hidden');
         }
         async function confirmEmailForward() {
-            // Принудительно убираем фокус с клавиатуры
             document.getElementById('forward-email-input').blur();
             
             const emailInput = document.getElementById('forward-email-input').value.trim();
