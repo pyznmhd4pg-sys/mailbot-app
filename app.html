@@ -9,7 +9,7 @@
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             padding: 16px; 
-            padding-top: 60px; /* Отступ для фиксированной панели */
+            padding-top: 60px; 
             margin: 0;
             color: #3E2723; 
             background-color: #FDEBD0;
@@ -23,7 +23,6 @@
             background-size: 200px 200px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
         }
 
-        /* Верхняя панель навигации */
         .top-nav {
             position: fixed;
             top: 0; left: 0; right: 0;
@@ -70,6 +69,26 @@
         .email h3 { margin: 0 0 5px 0; font-size: 16px; color: #3E2723; }
         .email p { margin: 5px 0; font-size: 14px; color: #5D4037; }
         
+        /* Стили для дерева папок */
+        .folder-item {
+            padding: 12px 14px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            color: #3E2723;
+            display: flex;
+            align-items: center;
+        }
+        .folder-item:active { background: rgba(255,255,255,0.8); }
+        .folder-children {
+            margin-left: 20px;
+            border-left: 1px solid rgba(0,0,0,0.1);
+            padding-left: 10px;
+        }
+
         .email-header {
             display: flex;
             justify-content: space-between;
@@ -221,10 +240,9 @@
     </style>
 </head>
 <body>
-    <!-- Верхняя навигация -->
     <div class="top-nav" id="top-nav">
         <button class="nav-btn" onclick="loadEmails('INBOX')">📥 Входящие</button>
-        <button class="nav-btn" onclick="loadFolders()">📂 Папки</button>
+        <button class="nav-btn" onclick="loadFoldersTree()">📂 Папки</button>
         <button class="nav-btn" onclick="loadEmails('Trash')">🗑 Корзина</button>
     </div>
 
@@ -328,7 +346,6 @@
             return data;
         }
 
-        // Подсветка активной кнопки
         function setActiveNav(index) {
             const btns = document.querySelectorAll('.nav-btn');
             btns.forEach((btn, i) => {
@@ -340,13 +357,12 @@
         async function loadEmails(folder = "INBOX") {
             currentFolder = folder;
             setActiveNav(folder === "INBOX" ? 0 : (folder === "Trash" ? 2 : -1));
-            
             showScreen('screen-list');
+            
             const list = document.getElementById('email-list');
             list.innerHTML = "Загрузка...";
             
             try {
-                // Используем эндпоинт для получения писем из конкретной папки
                 const data = await apiRequest("/api/folder_emails", { folder: folder });
                 list.innerHTML = "";
                 allEmails = data.emails || []; 
@@ -369,26 +385,57 @@
             }
         }
 
-        async function loadFolders() {
+        // --- Отрисовка дерева папок ---
+        async function loadFoldersTree() {
             setActiveNav(1);
             showScreen('screen-list');
             const list = document.getElementById('email-list');
-            list.innerHTML = "Загрузка папок...";
+            list.innerHTML = "Загрузка дерева папок...";
             
             try {
-                const data = await apiRequest("/api/folders", {});
+                const data = await apiRequest("/api/tree", {});
                 list.innerHTML = "";
-                data.folders.forEach(f => {
-                    const div = document.createElement('div');
-                    div.className = 'email';
-                    // По клику на папку открываем её
-                    div.onclick = () => loadEmails(f);
-                    div.innerHTML = `<h3>📁 ${f}</h3>`;
-                    list.appendChild(div);
-                });
+                if (!data.tree || Object.keys(data.tree).length === 0) {
+                    list.innerHTML = "Нет папок.";
+                    return;
+                }
+                // Вызываем рекурсивную функцию отрисовки
+                list.appendChild(renderTree(data.tree));
             } catch (e) {
                 list.innerHTML = `<div class="error">Ошибка: ${e.message}</div>`;
             }
+        }
+
+        function renderTree(node) {
+            const container = document.createElement('div');
+            
+            for (const key in node) {
+                const folderData = node[key];
+                
+                // Создаем строку папки
+                const item = document.createElement('div');
+                item.className = 'folder-item';
+                
+                // Если у папки есть вложенные, добавляем стрелочку или иконку
+                const hasChildren = Object.keys(folderData._children).length > 0;
+                item.innerHTML = `${hasChildren ? '📁' : '📄'} ${key}`;
+                
+                // По клику переходим в папку
+                item.onclick = (e) => {
+                    e.stopPropagation(); // Чтобы не срабатывал клик по родителю
+                    loadEmails(folderData._path);
+                };
+                
+                container.appendChild(item);
+                
+                // Если есть дети, рекурсивно отрисовываем их
+                if (hasChildren) {
+                    const childrenContainer = renderTree(folderData._children);
+                    childrenContainer.className = 'folder-children';
+                    container.appendChild(childrenContainer);
+                }
+            }
+            return container;
         }
 
         function openEmail(uid) {
@@ -556,7 +603,6 @@
         function showList() { showScreen('screen-list'); }
         function showView() { showScreen('screen-view'); }
 
-        // Инициализация при запуске
         loadEmails('INBOX');
     </script>
 </body>
