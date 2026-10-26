@@ -191,7 +191,6 @@
 <body>
     <div id="screen-list">
         <h2>📥 Входящие</h2>
-        <!-- Сюда мы выведем отладочную информацию, если будет ошибка -->
         <div id="debug-info" style="color: red; font-size: 12px; margin-bottom: 10px;"></div>
         <div id="email-list">Загрузка...</div>
     </div>
@@ -274,16 +273,14 @@
         tg.setHeaderColor('#FDEBD0');
         tg.setBackgroundColor('#FDEBD0');
 
-        // ⚠️ ЕДИНСТВЕННОЕ МЕСТО, ГДЕ НУЖНО МЕНЯТЬ ССЫЛКУ
-        const API_URL = "https://jewellery-son-sticks-injured.trycloudflare.com"; 
+        // ⚠️ МАГИЯ: Страница сама берет текущий адрес (ссылку туннеля), на котором она открыта!
+        const API_URL = window.location.origin; 
 
         let allEmails = []; 
         let currentEmail = null; 
 
         async function apiRequest(endpoint, body) {
             const fullUrl = API_URL + endpoint;
-            
-            // Выводим адрес на экран для отладки
             document.getElementById('debug-info').innerText = "Запрос: " + fullUrl;
 
             try {
@@ -293,18 +290,17 @@
                     body: JSON.stringify({ initData: tg.initData, ...body })
                 });
                 
-                const text = await response.text(); // Читаем как текст, чтобы увидеть любую ошибку
+                const text = await response.text(); 
                 
                 try {
                     const data = JSON.parse(text);
                     if (data.error) throw new Error(data.error);
-                    document.getElementById('debug-info').innerText = ""; // Убираем отладку при успехе
+                    document.getElementById('debug-info').innerText = ""; 
                     return data;
                 } catch (e) {
                     throw new Error("Ответ сервера: " + text);
                 }
             } catch (e) {
-                // Если fetch упал (например, CORS или нет сети)
                 document.getElementById('debug-info').innerText = "ОШИБКА СЕТИ: " + e.message;
                 throw e;
             }
