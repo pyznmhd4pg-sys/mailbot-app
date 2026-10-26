@@ -3,16 +3,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Отладка</title>
+    <title>Тест</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: monospace; padding: 16px; background: #FDEBD0; color: #3E2723; word-break: break-all; }
-        pre { white-space: pre-wrap; font-size: 12px; }
+        body { font-family: sans-serif; padding: 16px; background: #FDEBD0; color: #3E2723; }
+        #debug { color: red; font-size: 14px; font-weight: bold; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h3>Данные из API:</h3>
-    <pre id="debug">Загрузка...</pre>
+    <h2>Тест загрузки</h2>
+    <div id="debug">Ожидание...</div>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -22,24 +22,27 @@
         const API_URL = urlParams.get('api') || window.location.origin;
 
         async function test() {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.innerText = "Отправка запроса...";
+            
             try {
-                // Берем список писем
-                const res1 = await fetch(API_URL + "/api/emails", {
+                // Отправляем POST запрос на сервер
+                const response = await fetch(API_URL + "/api/emails", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ initData: tg.initData })
                 });
-                const data1 = await res1.json();
                 
-                if (data1.emails && data1.emails.length > 0) {
-                    // Берем первое письмо (в котором ты видел вложение)
-                    const firstEmail = data1.emails[0];
-                    document.getElementById('debug').innerText = JSON.stringify(firstEmail, null, 2);
-                } else {
-                    document.getElementById('debug').innerText = "Нет писем.";
-                }
+                debugDiv.innerText = "Статус ответа: " + response.status;
+                
+                // Получаем ответ как обычный текст
+                const text = await response.text();
+                
+                // Выводим первые 500 символов ответа на экран
+                debugDiv.innerText = "Ответ: " + text.substring(0, 500);
+                
             } catch (e) {
-                document.getElementById('debug').innerText = "Ошибка: " + e.message;
+                debugDiv.innerText = "ОШИБКА: " + e.message;
             }
         }
         
