@@ -3,16 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тест</title>
+    <title>Отладка списка</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: sans-serif; padding: 16px; background: #FDEBD0; color: #3E2723; }
-        #debug { color: red; font-size: 14px; font-weight: bold; margin-top: 20px; }
+        .email-item { border-bottom: 1px solid #ccc; padding: 10px 0; }
+        .error { color: red; }
     </style>
 </head>
 <body>
-    <h2>Тест загрузки</h2>
-    <div id="debug">Ожидание...</div>
+    <h3>Список писем:</h3>
+    <div id="debug">Загрузка...</div>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -23,26 +24,33 @@
 
         async function test() {
             const debugDiv = document.getElementById('debug');
-            debugDiv.innerText = "Отправка запроса...";
-            
             try {
-                // Отправляем POST запрос на сервер
                 const response = await fetch(API_URL + "/api/emails", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ initData: tg.initData })
                 });
                 
-                debugDiv.innerText = "Статус ответа: " + response.status;
+                const data = await response.json();
+                debugDiv.innerHTML = "";
                 
-                // Получаем ответ как обычный текст
-                const text = await response.text();
-                
-                // Выводим первые 500 символов ответа на экран
-                debugDiv.innerText = "Ответ: " + text.substring(0, 500);
-                
+                if (data.emails && data.emails.length > 0) {
+                    data.emails.forEach(em => {
+                        const div = document.createElement('div');
+                        div.className = 'email-item';
+                        
+                        // Считаем количество вложений
+                        const attCount = em.attachments ? em.attachments.length : 0;
+                        const attText = attCount > 0 ? `<b style="color:green;">📎 Вложений: ${attCount}</b>` : `<span style="color:gray;">Без вложений</span>`;
+                        
+                        div.innerHTML = `<b>${em.subject}</b><br>От: ${em.from_name}<br>${attText}`;
+                        debugDiv.appendChild(div);
+                    });
+                } else {
+                    debugDiv.innerText = "Писем нет.";
+                }
             } catch (e) {
-                debugDiv.innerText = "ОШИБКА: " + e.message;
+                debugDiv.innerText = "Ошибка: " + e.message;
             }
         }
         
