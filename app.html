@@ -19,8 +19,11 @@
         const tg = window.Telegram.WebApp;
         tg.ready();
         
-        // Страница берет адрес, на котором она открыта (это ссылка туннеля)
-        const API_URL = window.location.origin; 
+        // Берем ссылку на API из параметра в адресной строке. 
+        // Если параметра нет (открыли просто так), используем текущий адрес.
+        const urlParams = new URLSearchParams(window.location.search);
+        const API_URL = urlParams.get('api') || window.location.origin;
+
         document.getElementById('debug').innerText = "Стучимся по адресу: " + API_URL + "/api/emails";
 
         async function loadEmails() {
@@ -31,9 +34,8 @@
                     body: JSON.stringify({ initData: tg.initData })
                 });
                 
-                const text = await response.text(); // Читаем как текст
-                
-                document.getElementById('debug').innerText = "Ответ сервера: " + text; // Показываем ответ на экране
+                const text = await response.text();
+                document.getElementById('debug').innerText = "Ответ сервера: " + text;
                 
             } catch (e) {
                 document.getElementById('debug').innerText = "ОШИБКА СЕТИ: " + e.message;
